@@ -19,9 +19,13 @@ I decided to use python to clean and analyse my data but then used Tableau to vi
 
 Answers:
 1.2019 =$34,483,366
+
 2.December= $4,613,443. This could be for multiple reasons including: due to festive season, more gifts are bought, more people got their yearly bonuses etc.
+
 3. San Francisco, $8,262,204.
+
 4. Peak Advertising time would be between 9am to 11 am.
+
 5.AAA Batteries (4 pack), AA Batteries (4 pack), USB-C charging cable, lightning charging cable. These products are cheaper in comparison to other products , which from the graph more of the cheaper costing products sell the most as there is less extended-decision making.
 
 6. USB-C Order = 0.12%
