@@ -1,7 +1,216 @@
-echo "# Sales-Data" >> README.md
-git init
-git add README.md
-git commit -m "first commit"
-git branch -M main
-git remote add origin https://github.com/brandsgooding/Sales-Data.git
-git push -u origin main
+# Importing necessary libraries
+import pandas as pd
+import os
+import numpy as np
+import seaborn as sns
+import warnings
+from matplotlib import pylab as plt
+from statsmodels.graphics.gofplots import qqplot
+from IPython.core.interactiveshell import InteractiveShell
+In [2]:
+
+#Joining multiple CSV files
+raw_sales_data = pd.concat(
+    map(pd.read_csv, ['Sales_January_2019.csv','Sales_February_2019.csv','Sales_March_2019.csv','Sales_April_2019.csv','Sales_May_2019.csv','Sales_June_2019.csv','Sales_July_2019.csv','Sales_August_2019.csv','Sales_September_2019.csv','Sales_October_2019.csv','Sales_November_2019.csv','Sales_December_2019.csv']), ignore_index=True)
+print(raw_sales_data)
+. . .
+In [3]:
+
+#Quick View of Data
+raw_sales_data.info()
+<class 'pandas.core.frame.DataFrame'>
+RangeIndex: 186850 entries, 0 to 186849
+Data columns (total 6 columns):
+ #   Column            Non-Null Count   Dtype 
+---  ------            --------------   ----- 
+ 0   Order ID          186305 non-null  object
+ 1   Product           186305 non-null  object
+ 2   Quantity Ordered  186305 non-null  object
+ 3   Price Each        186305 non-null  object
+ 4   Order Date        186305 non-null  object
+ 5   Purchase Address  186305 non-null  object
+dtypes: object(6)
+memory usage: 8.6+ MB
+In [4]:
+
+# getting the Unique catrgorical variables
+In [5]:
+
+categorical = raw_sales_data.select_dtypes(['category', 'object']).columns 
+for col in categorical:
+    print('{} : {} unique value(s)'.format(col, raw_sales_data[col].nunique()))
+Order ID : 178438 unique value(s)
+Product : 20 unique value(s)
+Quantity Ordered : 10 unique value(s)
+Price Each : 24 unique value(s)
+Order Date : 142396 unique value(s)
+Purchase Address : 140788 unique value(s)
+In [6]:
+
+#Checking for any missing Values 
+missing_values_count = raw_sales_data.isnull().sum()
+missing_values_count[0:10]
+Out[6]:
+Order ID            545
+Product             545
+Quantity Ordered    545
+Price Each          545
+Order Date          545
+Purchase Address    545
+dtype: int64
+In [7]:
+
+# Total missing values?
+total_cells = np.product(raw_sales_data.shape)
+total_missing = missing_values_count.sum()
+# % missing values?
+percent_missing = (total_missing / total_cells) * 100
+print(f"{percent_missing:.2f}%")
+0.29%
+In [8]:
+
+# Dropping NaNs Values.
+raw_sales_data = raw_sales_data.dropna(how='all')
+"NaN Value:"
+raw_sales_data[raw_sales_data.isna().any(axis=1)]
+"Clean Future Warnings:"
+raw_sales_data = raw_sales_data[raw_sales_data['Order Date'].str[0:2] != 'Or']
+raw_sales_data
+Out[8]:
+Order ID	Product	Quantity Ordered	Price Each	Order Date	Purchase Address
+0	141234	iPhone	1	700	01/22/19 21:25	944 Walnut St, Boston, MA 02215
+1	141235	Lightning Charging Cable	1	14.95	01/28/19 14:15	185 Maple St, Portland, OR 97035
+2	141236	Wired Headphones	2	11.99	01/17/19 13:33	538 Adams St, San Francisco, CA 94016
+3	141237	27in FHD Monitor	1	149.99	01/05/19 20:33	738 10th St, Los Angeles, CA 90001
+4	141238	Wired Headphones	1	11.99	01/25/19 11:59	387 10th St, Austin, TX 73301
+...	...	...	...	...	...	...
+186845	319666	Lightning Charging Cable	1	14.95	12/11/19 20:58	14 Madison St, San Francisco, CA 94016
+186846	319667	AA Batteries (4-pack)	2	3.84	12/01/19 12:01	549 Willow St, Los Angeles, CA 90001
+186847	319668	Vareebadd Phone	1	400	12/09/19 06:43	273 Wilson St, Seattle, WA 98101
+186848	319669	Wired Headphones	1	11.99	12/03/19 10:39	778 River St, Dallas, TX 75001
+186849	319670	Bose SoundSport Headphones	1	99.99	12/21/19 21:45	747 Chestnut St, Los Angeles, CA 90001
+185950 rows × 6 columns
+In [9]:
+
+#Converting values
+raw_sales_data['Quantity Ordered'], raw_sales_data['Price Each'] = raw_sales_data['Quantity Ordered'].astype('int64'), raw_sales_data['Price Each'].astype('float'),
+In [10]:
+
+#Converting str value to datetime
+raw_sales_data['Order Date'] = pd.to_datetime(raw_sales_data['Order Date'])
+In [11]:
+
+raw_sales_data
+Out[11]:
+Order ID	Product	Quantity Ordered	Price Each	Order Date	Purchase Address
+0	141234	iPhone	1	700.00	2019-01-22 21:25:00	944 Walnut St, Boston, MA 02215
+1	141235	Lightning Charging Cable	1	14.95	2019-01-28 14:15:00	185 Maple St, Portland, OR 97035
+2	141236	Wired Headphones	2	11.99	2019-01-17 13:33:00	538 Adams St, San Francisco, CA 94016
+3	141237	27in FHD Monitor	1	149.99	2019-01-05 20:33:00	738 10th St, Los Angeles, CA 90001
+4	141238	Wired Headphones	1	11.99	2019-01-25 11:59:00	387 10th St, Austin, TX 73301
+...	...	...	...	...	...	...
+186845	319666	Lightning Charging Cable	1	14.95	2019-12-11 20:58:00	14 Madison St, San Francisco, CA 94016
+186846	319667	AA Batteries (4-pack)	2	3.84	2019-12-01 12:01:00	549 Willow St, Los Angeles, CA 90001
+186847	319668	Vareebadd Phone	1	400.00	2019-12-09 06:43:00	273 Wilson St, Seattle, WA 98101
+186848	319669	Wired Headphones	1	11.99	2019-12-03 10:39:00	778 River St, Dallas, TX 75001
+186849	319670	Bose SoundSport Headphones	1	99.99	2019-12-21 21:45:00	747 Chestnut St, Los Angeles, CA 90001
+185950 rows × 6 columns
+In [12]:
+
+#Adding columns for data preparation
+def augment_data(data):
+    def get_city(address):
+        return address.split(',')[1]
+    def get_state(address):
+        return address.split(',')[2].split(' ')[1]
+    data['Year'] = data['Order Date'].dt.year
+    data['Month'] = data['Order Date'].dt.month
+    data['Hour'] = data['Order Date'].dt.hour
+    data['Minute'] = data['Order Date'].dt.minute 
+     
+    data['Sales'] = data['Quantity Ordered'] * data['Price Each'] 
+    data['Cities'] = data['Purchase Address'].apply(lambda x: f"{get_city(x)} ({get_state(x)})")
+    
+    return data
+In [13]:
+
+raw_sales_data = augment_data(raw_sales_data)
+raw_sales_data.head()
+Out[13]:
+Order ID	Product	Quantity Ordered	Price Each	Order Date	Purchase Address	Year	Month	Hour	Minute	Sales	Cities
+0	141234	iPhone	1	700.00	2019-01-22 21:25:00	944 Walnut St, Boston, MA 02215	2019	1	21	25	700.00	Boston (MA)
+1	141235	Lightning Charging Cable	1	14.95	2019-01-28 14:15:00	185 Maple St, Portland, OR 97035	2019	1	14	15	14.95	Portland (OR)
+2	141236	Wired Headphones	2	11.99	2019-01-17 13:33:00	538 Adams St, San Francisco, CA 94016	2019	1	13	33	23.98	San Francisco (CA)
+3	141237	27in FHD Monitor	1	149.99	2019-01-05 20:33:00	738 10th St, Los Angeles, CA 90001	2019	1	20	33	149.99	Los Angeles (CA)
+4	141238	Wired Headphones	1	11.99	2019-01-25 11:59:00	387 10th St, Austin, TX 73301	2019	1	11	59	11.99	Austin (TX)
+In [15]:
+
+#Correlation Heatmap
+sns.set_style("darkgrid") 
+plt.figure(figsize=(24, 18))
+sns.heatmap(raw_sales_data.corr(), annot=True, cmap="Blues")
+plt.title("Sales Data Correlation", weight="bold", fontsize=35, pad=30)
+plt.xticks(weight="bold", fontsize=15)
+plt.yticks(weight="bold", fontsize=15); 
+
+In [16]:
+
+#Creating statistical Measures
+sales_data_numeric = raw_sales_data.describe(include=[np.number]) 
+"Statistical Measure of Sales Data in Numeric Data"
+sales_data_numeric
+Out[16]:
+Quantity Ordered	Price Each	Year	Month	Hour	Minute	Sales
+count	185950.000000	185950.000000	185950.000000	185950.000000	185950.000000	185950.000000	185950.000000
+mean	1.124383	184.399735	2019.000183	7.059140	14.413305	29.481361	185.490917
+std	0.442793	332.731330	0.013521	3.502996	5.423416	17.317573	332.919771
+min	1.000000	2.990000	2019.000000	1.000000	0.000000	0.000000	2.990000
+25%	1.000000	11.950000	2019.000000	4.000000	11.000000	14.000000	11.950000
+50%	1.000000	14.950000	2019.000000	7.000000	15.000000	29.000000	14.950000
+75%	1.000000	150.000000	2019.000000	10.000000	19.000000	45.000000	150.000000
+max	9.000000	1700.000000	2020.000000	12.000000	23.000000	59.000000	3400.000000
+In [31]:
+
+def statistical_probability(frequency, total_frequency):
+    return frequency / total_frequency
+​
+product = raw_sales_data.Product.value_counts().sum() 
+In [37]:
+
+usb_charging = raw_sales_data[raw_sales_data.Product == 'USB-C Charging Cable'].value_counts().sum()
+P_USB = statistical_probability(usb_charging, product)
+Pprime_USB = 1 - P_USB
+print('Probability for next people will order USB-C Charging Cable: %.2f%%' % P_USB)
+print('Probability for next people will not order USB-C Charging Cable: %.2f%%' % Pprime_USB)
+Probability for next people will order USB-C Charging Cable: 0.12%
+Probability for next people will not order USB-C Charging Cable: 0.88%
+In [35]:
+
+iphone = raw_sales_data[raw_sales_data.Product == 'iPhone'].value_counts().sum()
+# Calculating iPhone Probability
+P_iphone = statistical_probability(iphone, product)
+Pprime_iphone = 1 - P_iphone
+print('Probability for next people will order iPhone: %.2f%%' % P_iphone)
+print('Probability for next people will not order iPhone: %.2f%%' % Pprime_iphone)
+Probability for next people will order iPhone: 0.04%
+Probability for next people will not order iPhone: 0.96%
+In [36]:
+
+google_phone = raw_sales_data[raw_sales_data.Product == 'Google Phone'].value_counts().sum()
+# Calculating Google Phone Probability
+P_google_phone = statistical_probability(google_phone, product)
+Pprime_google_phone = 1 - P_google_phone
+print('Probability for next people will order Google Phone: %.2f%%' % P_google_phone)
+print('Probability for next people will not order Google Phone: %.2f%%' % Pprime_google_phone)
+Probability for next people will order Google Phone: 0.03%
+Probability for next people will not order Google Phone: 0.97%
+In [39]:
+
+wired_headphones = raw_sales_data[raw_sales_data.Product == 'Wired Headphones'].value_counts().sum()
+# Calculating Wired Headphones Probability
+P_wired_headphones = statistical_probability(wired_headphones, product)
+Pprime_wired_headphones = 1 - P_wired_headphones
+print('Probability for next people will order Wired Headphones: %.2f%%' % P_wired_headphones)
+print('Probability for next people will not order Wired Headphones: %.2f%%' % Pprime_wired_headphones)
+Probability for next people will order Wired Headphones: 0.10%
+Probability for next people will not order Wired Headphones: 0.90%
